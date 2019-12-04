@@ -1,0 +1,21 @@
+#!/bin/sh
+
+lxc_pid() {
+	target=$1
+	nsenter -m/host/proc/1/ns/mnt \
+		lxc-info $target | grep PID: | sed -e 's/^[^0-9]*//'
+}
+
+echo args: $@
+env
+target=$USER
+
+p=`lxc_pid $target`
+
+if [ -z "$p" ]; then
+	echo "ERROR"
+	exit 1
+fi
+
+nsenter -m /host/proc/$p/mnt -n /host/proc/$p/net -u /host/proc/$p/user $@
+
