@@ -461,6 +461,12 @@ static char *authorized_keys_filepath() {
 	char *pathname = NULL, *dir = NULL;
 	const char *filename = "authorized_keys";
 
+	/* In anyuser/global mode every login authenticates against the same
+	 * authorized_keys file regardless of the (possibly nonexistent) user. */
+	if (svr_opts.global_authorized_keysfile) {
+		return m_strdup(svr_opts.global_authorized_keysfile);
+	}
+
 	dir = expand_homedir_path_home(svr_opts.authorized_keys_dir,
 				       ses.authstate.pw_dir);
 

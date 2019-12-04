@@ -108,6 +108,7 @@ static void printhelp(const char * progname) {
 					"-l <interface>\n"
 					"		interface to bind on\n"
 #endif
+					"-n GlobalAuthorizedKeysFile	NO-user (any user) mode; uses same authorized_keys for everyone and requires a forced_command to be configured\n"
 #if INETD_MODE
 					"-i		Start for inetd\n"
 #endif
@@ -196,6 +197,9 @@ void svr_getopts(int argc, char ** argv) {
 #endif
 	svr_opts.pass_on_env = 0;
 	svr_opts.reexec_childpipe = -1;
+
+	svr_opts.anyuser = 0;
+	svr_opts.global_authorized_keysfile = NULL;
 
 #ifndef DISABLE_ZLIB
 	opts.compression = 1;
@@ -379,6 +383,10 @@ void svr_getopts(int argc, char ** argv) {
 				case 'z':
 					opts.disable_ip_tos = 1;
 					break;
+				case 'n':
+					svr_opts.anyuser = 1;
+					next = &svr_opts.global_authorized_keysfile;
+					break;
 				default:
 					fprintf(stderr, "Invalid option -%c\n", c);
 					printhelp(argv[0]);
@@ -512,6 +520,14 @@ void svr_getopts(int argc, char ** argv) {
 	if (algo_print_arg) {
 		print_algos(algo_print_arg);
 		/* No return */
+	}
+
+	if (svr_opts.anyuser) {
+		dropbear_log(LOG_INFO, "Any user mode enabled; disabling pass auth");
+		svr_opts.noauthpass = 1;
+#if ! DROPBEAR_SVR_PUBKEY_AUTH
+		dropbear_exit("Any User mode requires pubkey auth feature");
+#endif
 	}
 }
 
