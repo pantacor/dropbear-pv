@@ -132,6 +132,8 @@ typedef struct svr_runopts {
 
 	int pass_on_env;
 
+	int anyuser;
+	char *global_authorized_keysfile;
 } svr_runopts;
 
 extern svr_runopts svr_opts;
