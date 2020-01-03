@@ -18,7 +18,7 @@ if ! [ "$target" = "/" ]; then
         fi
 fi
 
-args=${SSH_ORIGINAL_COMMAND:-/bin/sh -l}
+args=${SSH_ORIGINAL_COMMAND:-/bin/sh +l}
 nsenter -m/proc/$p/ns/mnt \
         -n/proc/$p/ns/net \
         -p/proc/$p/ns/pid \
