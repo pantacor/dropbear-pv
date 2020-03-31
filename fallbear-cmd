@@ -24,5 +24,6 @@ nsenter -m/proc/$p/ns/mnt \
         -p/proc/$p/ns/pid \
         -u/proc/$p/ns/uts \
         -i/proc/$p/ns/ipc \
+        -- \
         $args
 
