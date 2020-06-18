@@ -8,6 +8,7 @@ LOCAL_DESCRIPTION := dropbear-pv
 LOCAL_AUTOTOOLS_CONFIGURE_ARGS := \
 	--enable-static \
 	--disable-lastlog \
+	--disable-wtmp \
 	$(NULL)
 
 LOCAL_LIBRARIES += zlib
