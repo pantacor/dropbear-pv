@@ -14,14 +14,30 @@ lxc_pid() {
 
 target=$USER
 p=1
+plat=${USER##*@}
+plat_tty=${USER%@$plat}
 
-if ! [ "$target" = "/" ]; then
+
+if [ "$plat" = "$plat_tty" ]; then
+	plat_tty=
+fi
+
+if ! [ "$plat" = "/" -o "$plat" = "_pv_"  ]; then
     p=`lxc_pid $target`
 
     if [ -z "$p" ]; then
-	echo "no container found: $target"
+	echo "no container found: $plat"
 	exit 1
     fi
+else
+	# always unset plat_tty for pv env
+	plat_tty=
+fi
+
+# if we try to go for a tty, we use lxc-console ...
+if [ -n "$plat_tty" ]; then
+	lxc-console --name $plat -t $plat_tty
+	exit $?
 fi
 
 PVUSER=${PVUSER:-root}
