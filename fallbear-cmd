@@ -23,7 +23,7 @@ if [ "$plat" = "$plat_tty" ]; then
 fi
 
 if ! [ "$plat" = "/" -o "$plat" = "_pv_"  ]; then
-    p=`lxc_pid $target`
+    p=`lxc_pid $plat`
 
     if [ -z "$p" ]; then
 	echo "no container found: $plat"
