@@ -51,14 +51,24 @@ home=`echo $pwdline | sed -e 's/^.*:\([^:]*\):[^:]*$/\1/'`
 echo_debug shell: $shell
 echo_debug home: $home
 
-args=${SSH_ORIGINAL_COMMAND:-${shell:-/bin/sh} -l}
-echo_debug running shell: $args
+# set default values if no passwd entry was found
+shell="${shell:-/bin/sh}"
+home="${home:-/tmp1}"
 
-USER=root LOGNAME=root HOME=${home:-/tmp1} \
-    nsenter -m/proc/$p/ns/mnt \
-    -n/proc/$p/ns/net \
-    -p/proc/$p/ns/pid \
-    -u/proc/$p/ns/uts \
-    -i/proc/$p/ns/ipc \
-    -- \
-    $args
+# Mimic the behavior of the OpenSSH daemon:
+# https://github.com/openssh/openssh-portable/blob/31d8d231eb9377df474746a822d380c5d68d7ad6/session.c#L1679-L1714
+if [ -z "$SSH_ORIGINAL_COMMAND" ]; then
+	# OpenSSH prepends "-" to argv0 to spawn a login shell. This is not
+	# possible in a shell script, so use the -l option, which most shells
+	# support.
+	set -- "$shell" -l
+else
+	# Use the user's login shell to run the original command.
+	set -- "$shell" -c "$SSH_ORIGINAL_COMMAND"
+fi
+
+echo_debug running command: "$@"
+
+# Set environment variables, that are normally set by login(1)
+USER="$PVUSER" LOGNAME="$PVUSER" HOME="$home" SHELL="$shell" SHLVL="" \
+	exec nsenter --target "$p" --mount --net --pid --uts --ipc -- "$@"
