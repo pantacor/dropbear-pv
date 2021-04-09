@@ -69,6 +69,17 @@ fi
 
 echo_debug running command: "$@"
 
+# Use shell quoting magic to preserve arguments with whitespace, while changing
+# to the home directory first: Arguments are only passed correctly with $@ in
+# double quotes. To pass arguments to sh, the following form is used:
+#
+#    sh -c command_string [argv0 [argument...]]
+#
+# where argv0 is set to its default value "sh". The arguments to exec are in
+# single quotes, so that the called sh process expands those arguments instead
+# of the calling (i.e. this) process.
+set -- sh -c "[ -x '$home' ] && cd '$home'; "'exec "$@"' sh "$@"
+
 # Set environment variables, that are normally set by login(1)
 USER="$PVUSER" LOGNAME="$PVUSER" HOME="$home" SHELL="$shell" SHLVL="" \
 	exec nsenter --target "$p" --mount --net --pid --uts --ipc -- "$@"
