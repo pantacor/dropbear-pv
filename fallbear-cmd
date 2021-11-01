@@ -81,6 +81,12 @@ echo_debug running command: "$@"
 # of the calling (i.e. this) process.
 set -- sh -c "[ -x '$home' ] && cd '$home'; "'exec "$@"' sh "$@"
 
+
+caps=
+if nsenter --caps /bin/true &>/dev/null; then
+       caps=--caps
+fi
+
 # Set environment variables, that are normally set by login(1)
 USER="$PVUSER" LOGNAME="$PVUSER" HOME="$home" SHELL="$shell" SHLVL="" \
-	exec nsenter --target "$p" --mount --net --pid --uts --ipc -- "$@"
+	exec nsenter --target "$p" --mount --net --pid --uts --ipc $caps -- "$@"
