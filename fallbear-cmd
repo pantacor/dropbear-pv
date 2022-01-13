@@ -87,6 +87,22 @@ if nsenter --caps /bin/true &>/dev/null; then
        caps=--caps
 fi
 
+
+# join all cgroups if nsenter support -C
+cgroups=
+if nsenter -t $$ -C /bin/true &>/dev/null; then
+       cgroups=-C
+fi
+
+pidi=$$
+[ -z "$cgroups" ] || cat /proc/$p/cgroup | while read -r line; do
+	echo $line | awk -F : '{ print $2 $3 }' | while read -r cgroup_group cgroup_path; do
+		cgroup_group=`echo $cgroup_group | sed -e 's/.*=//'`
+		echo $pidi > /sys/fs/cgroup/$cgroup_group$cgroup_path/cgroup.procs
+	done
+done
+
 # Set environment variables, that are normally set by login(1)
 USER="$PVUSER" LOGNAME="$PVUSER" HOME="$home" SHELL="$shell" SHLVL="" \
-	exec nsenter --target "$p" --mount --net --pid --uts --ipc $caps -- "$@"
+	exec nsenter --target "$p" $cgroups --mount --net --pid --uts --ipc $caps -- "$@"
+
