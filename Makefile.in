@@ -214,6 +214,7 @@ inst_dropbear: dropbear
 	echo "# This directory is where drop bear puts its hostkeys." > $(DESTDIR)/etc/dropbear/README.txt
 	$(INSTALL) -d -m 755 $(DESTDIR)/usr/bin
 	$(INSTALL) -m 755 $(srcdir)/fallbear-cmd $(DESTDIR)/usr/bin/fallbear-cmd
+	$(INSTALL) -m 755 $(srcdir)/pventer $(DESTDIR)/usr/bin/pventer
 
 inst_%: %
 	$(INSTALL) -d $(DESTDIR)$(bindir)
