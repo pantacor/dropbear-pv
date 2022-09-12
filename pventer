@@ -6,6 +6,9 @@ usage() {
 	echo "executes CMD in "container" namespace. If CMD is empty enters container and runs default shell"
 }
 
+scriptpath=`readlink -f "$0"`
+usrbinpath=`dirname "$scriptpath"`
+
 while [ "$1" ]; do
 	case "$1" in
 	   --container|-c)
@@ -28,4 +31,4 @@ if ! [ $container ]; then
 	echo "ERROR: see --help"
 fi
 
-SSH_ORIGINAL_COMMAND=$@ USER=$container fallbear-cmd
+SSH_ORIGINAL_COMMAND=$@ USER=$container "$usrbinpath/fallbear-cmd"
