@@ -107,6 +107,10 @@ pidi=$$
 	done
 done
 
+cat /proc/$p/environ  | tr '\0' '\n' | sed 's/\\/\\\\/g;s/"/\\"/g;s/=\(.*\)/="\1"/' > /env-$p
+set -a
+. /env-$p
+
 # Set environment variables, that are normally set by login(1)
 USER="$PVUSER" LOGNAME="$PVUSER" HOME="$home" SHELL="$shell" SHLVL="" \
 	exec nsenter --target "$p" $cgroups --mount --net --pid --uts --ipc $caps -- "$@"
