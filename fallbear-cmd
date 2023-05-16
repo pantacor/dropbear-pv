@@ -8,7 +8,7 @@ echo_debug() {
 
 lxc_pid() {
 	target=$1
-	nsenter --target 1 --mount -- lxc-info --no-humanize --pid "$target"
+	nsenter --target 1 --mount -- lxc-info -P $LXC_PATH --no-humanize --pid "$target"
 }
 
 target=$USER
@@ -37,7 +37,7 @@ esac
 
 # if we try to go for a tty, we use lxc-console ...
 if [ -n "$plat_tty" ]; then
-	exec lxc-console --name "$plat" -t "$plat_tty"
+	exec lxc-console -P $LXC_PATH --name "$plat" -t "$plat_tty"
 fi
 
 PVUSER=${PVUSER:-root}
@@ -107,10 +107,19 @@ pidi=$$
 	done
 done
 
+# store PATH and LD_LIBRARY_PATH so we can call the right nsenter command
+HOST_PATH=$PATH
+HOST_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
+
+# get all env variables from container
 cat /proc/$p/environ  | tr '\0' '\n' | sed 's/\\/\\\\/g;s/"/\\"/g;s/=\(.*\)/="\1"/' > /env-$p
 set -a
 . /env-$p
 rm -f /env-$p
+
+# restore PATH and LD_LIBRARY_PATH
+PATH=$HOST_PATH
+LD_LIBRARY_PATH=$HOST_LD_LIBRARY_PATH
 
 # Set environment variables, that are normally set by login(1)
 USER="$PVUSER" LOGNAME="$PVUSER" HOME="$home" SHELL="$shell" SHLVL="" \
