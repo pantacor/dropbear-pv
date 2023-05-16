@@ -1,10 +1,11 @@
 #!/bin/sh
 
-
 usage() {
 	echo "USAGE: pventer -c <container> [CMD ...]"
 	echo "executes CMD in "container" namespace. If CMD is empty enters container and runs default shell"
 }
+
+LXC_PATH="${LXC_PATH:-/usr/var/lib/lxc}"
 
 while [ "$1" ]; do
 	case "$1" in
@@ -28,4 +29,4 @@ if ! [ $container ]; then
 	echo "ERROR: see --help"
 fi
 
-SSH_ORIGINAL_COMMAND=$@ USER=$container fallbear-cmd
+SSH_ORIGINAL_COMMAND=$@ USER=$container LXC_PATH=$LXC_PATH fallbear-cmd
