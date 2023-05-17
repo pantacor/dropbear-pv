@@ -8,13 +8,15 @@ echo_debug() {
 
 lxc_pid() {
 	target=$1
-	nsenter --target 1 --mount -- lxc-info -P $LXC_PATH --no-humanize --pid "$target"
+	nsenter --target 1 --mount -- lxc-info $lxc_path_opt --no-humanize --pid "$target"
 }
 
 target=$USER
 p=1
 plat=${USER##*@}
 plat_tty=${USER%@$plat}
+lxc_path_opt=
+[ -n "$LXC_PATH" ] && lxc_path_opt="-P $LXC_PATH"
 
 if [ "$plat" = "$plat_tty" ]; then
 	plat_tty=
@@ -37,7 +39,7 @@ esac
 
 # if we try to go for a tty, we use lxc-console ...
 if [ -n "$plat_tty" ]; then
-	exec lxc-console -P $LXC_PATH --name "$plat" -t "$plat_tty"
+	exec lxc-console $lxc_path_opt --name "$plat" -t "$plat_tty"
 fi
 
 PVUSER=${PVUSER:-root}
@@ -81,23 +83,36 @@ echo_debug running command: "$@"
 # of the calling (i.e. this) process.
 set -- sh -c "[ -x '$home' ] && cd '$home'; "'exec "$@"' sh "$@"
 
-
+# check if nsenter supports --caps
 caps=
 if nsenter --caps /bin/true &>/dev/null; then
        caps=--caps
 fi
 
-
-# join all cgroups if nsenter support -C
+# check if nsenter supports -C 
 cgroups=
 if nsenter -t $$ -C /bin/true &>/dev/null; then
        cgroups=-C
 fi
 
+# check cgroup version
+cgroupv="UNKNOWN"
+cgroup_mounts=$(mount | grep "cgroup")
+if echo "$cgroup_mounts" | grep -q " cgroup2 "; then
+	if echo "$cgroup_mounts" | grep -q " cgroup "; then
+		cgroupv="HYBRID"
+	else
+		cgroupv="UNIFIED"
+	fi
+elif echo "$cgroup_mounts" | grep -q " cgroup "; then
+	cgroupv="LEGACY"
+fi
+
+# attach current PID to the platform cgroup if nsenter supports -C
 pidi=$$
 [ -z "$cgroups" ] || cat /proc/$p/cgroup | while read -r line; do
 	echo $line | awk -F : '{ print $1 " " $2 " " $3 }' | while read -r cgroup_id cgroup_group cgroup_path; do
-		if [ "$cgroup_id" -eq "0" ]; then
+		if [ "$cgroup_id" -eq "0" ] && [ "$cgroupv" = "HYBRID" ]; then
 			cgroup_procs_path=/sys/fs/cgroup/unified$cgroup_path/cgroup.procs
 		else
 			cgroup_group=`echo $cgroup_group | sed -e 's/.*=//'`
