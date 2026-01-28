@@ -2,9 +2,9 @@ name: Pantavisor Build
 
 on:
   push:
-    branches: [ master ]
+    branches: [ pv/master ]
   pull_request:
-    branches: [ master ]
+    branches: [ pv/master ]
 
 jobs:
   build:
