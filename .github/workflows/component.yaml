@@ -1,0 +1,55 @@
+name: Dropbear Build
+
+on:
+  push:
+    branches: [ pv/master ]
+  pull_request:
+    branches: [ pv/master ]
+
+jobs:
+  build:
+    runs-on: ["self-hosted"]
+    container:
+      image: ubuntu:22.04
+      options: --user root
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk_env: [stable, rc]
+        target: [raspberrypi-armv8-scarthgap, sunxi-bananapi-m2-berry-scarthgap]
+        include:
+          - sdk_env: stable
+            version: "02-test"
+          - sdk_env: rc
+            version: "024-rc2"
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential bc curl autoconf automake libtool cmake python3 git cpio sudo xz-utils
+      - name: Download and Install SDK
+        run: |
+          SDK_URL=$(curl -s https://pantavisor-ci.s3.amazonaws.com/meta-pantavisor/releases.json |
+            python3 -c "import sys, json; 
+            data = json.load(sys.stdin); 
+            env_data = data.get('${{ matrix.sdk_env == 'stable' and 'stable' or 'release-candidate' }}', {}); 
+            version_data = env_data.get('${{ matrix.version }}', []); 
+            target_data = next((item for item in version_data if item.get('name') == '${{ matrix.target }}'), {}); 
+            print(target_data.get('sdk', {}).get('url', ''))")
+          
+          if [ -z "$SDK_URL" ]; then
+            echo "SDK URL not found for ${{ matrix.target }} in ${{ matrix.sdk_env }}"
+            exit 1
+          fi
+          
+          curl -L -O $SDK_URL
+          chmod +x *.sh
+          ./*.sh -y -d ~/sdk
+      - name: Build
+        run: |
+          SETUP_FILE=$(find ~/sdk -name "environment-setup-*")
+          source $SETUP_FILE
+          ./configure --host=$HOST_SYS
+          make -j$(nproc)
